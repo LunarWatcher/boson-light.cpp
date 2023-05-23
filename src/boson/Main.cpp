@@ -113,6 +113,12 @@ int main() {
             "meta.stackoverflow",
             initNow
         },
+        {
+            1702,
+            stackchat::StackSite::META_STACKEXCHANGE,
+            "meta.stackexchange",
+            initNow
+        }
 
     };
 
