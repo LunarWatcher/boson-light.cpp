@@ -58,7 +58,7 @@ int main() {
     Timepoint initNow = Clock::now() - std::chrono::seconds(60);
     std::vector<Rooms> rooms = {
         {
-            197325,
+            197298,
             stackchat::StackSite::STACKOVERFLOW,
             "meta.stackoverflow",
             initNow
@@ -67,42 +67,35 @@ int main() {
     };
 
 
-    try {
-        for (auto& room : rooms) {
-            chat.join(room.site, room.roomId);
-        }
-
-        while (true) {
-            Timepoint cycleTime = Clock::now();
-            for (auto& [targetRoomID, roomSite, apiSite, lastTime] : rooms) {
-                // there's realistically never going to be 100 comments in a short span of time
-                auto res = api.get<stackapi::Comment>(
-                    "comments",
-                    {{"fromdate", std::to_string(std::chrono::duration_cast<std::chrono::seconds>(lastTime.time_since_epoch()).count())}},
-                    { .site{apiSite}, .filter{"!nOedRLmfyw"} }
-                );
-                if (res.items.size()) {
-                    for (auto& comment : res.items) {
-                        chat.sendTo(roomSite, targetRoomID,
-                                    fmt::format("{} New comment posted by [{}]({})", botHeader, comment.owner.display_name, comment.owner.link));
-                        chat.sendTo(
-                            roomSite, targetRoomID,
-                            comment.link
-                        );
-                    }
-                }
-
-                lastTime = cycleTime;
-
-            }
-
-            std::this_thread::sleep_for(std::chrono::minutes(1));
-        }
-    } catch (...) {
-        // I'm sure this won't go wrong :)
-        chat.sendTo(stackchat::StackSite::STACKOVERFLOW, 197325, "@Zoe Boson died. See logs and restart");
-        throw;
+    for (auto& room : rooms) {
+        chat.join(room.site, room.roomId);
     }
 
+    while (true) {
+        Timepoint cycleTime = Clock::now();
+        for (auto& [targetRoomID, roomSite, apiSite, lastTime] : rooms) {
+            // there's realistically never going to be 100 comments in a short span of time
+            auto res = api.get<stackapi::Comment>(
+                "comments",
+                {{"fromdate", std::to_string(std::chrono::duration_cast<std::chrono::seconds>(lastTime.time_since_epoch()).count())}},
+                { .site{apiSite}, .filter{"!nOedRLmfyw"} }
+            );
+            if (res.items.size()) {
+                for (auto& comment : res.items) {
+                    chat.sendTo(roomSite, targetRoomID,
+                                fmt::format("{} New comment posted by [{}]({})", botHeader, comment.owner.display_name, comment.owner.link));
+                    chat.sendTo(
+                        roomSite, targetRoomID,
+                        comment.link
+                    );
+                }
+            }
+
+            lastTime = cycleTime;
+
+        }
+
+        std::this_thread::sleep_for(std::chrono::minutes(1));
+    }
 
 }
