@@ -121,10 +121,9 @@ int main() {
         threads.push_back(std::thread(std::bind(runner, std::ref(chat), std::ref(api), room)));
     }
 
-
     while (running) {
         std::this_thread::sleep_for(std::chrono::seconds(60));
     }
-
+    spdlog::error("Thread error");
 
 }
