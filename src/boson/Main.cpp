@@ -67,35 +67,41 @@ int main() {
     };
 
 
-    for (auto& room : rooms) {
-        chat.join(room.site, room.roomId);
-    }
-
-    while (true) {
-        Timepoint cycleTime = Clock::now();
-        for (auto& [targetRoomID, roomSite, apiSite, lastTime] : rooms) {
-            // there's realistically never going to be 100 comments in a short span of time
-            auto res = api.get<stackapi::Comment>(
-                "comments",
-                {{"fromdate", std::to_string(std::chrono::duration_cast<std::chrono::seconds>(lastTime.time_since_epoch()).count())}},
-                { .site{apiSite}, .filter{"!nOedRLmfyw"} }
-            );
-            if (res.items.size()) {
-                for (auto& comment : res.items) {
-                    chat.sendTo(roomSite, targetRoomID,
-                                fmt::format("{} New comment posted by [{}]({})", botHeader, comment.owner.display_name, comment.owner.link));
-                    chat.sendTo(
-                        roomSite, targetRoomID,
-                        comment.link
-                    );
-                }
-            }
-
-            lastTime = cycleTime;
-
+    try {
+        for (auto& room : rooms) {
+            chat.join(room.site, room.roomId);
         }
 
-        std::this_thread::sleep_for(std::chrono::minutes(1));
+        while (true) {
+            Timepoint cycleTime = Clock::now();
+            for (auto& [targetRoomID, roomSite, apiSite, lastTime] : rooms) {
+                // there's realistically never going to be 100 comments in a short span of time
+                auto res = api.get<stackapi::Comment>(
+                    "comments",
+                    {{"fromdate", std::to_string(std::chrono::duration_cast<std::chrono::seconds>(lastTime.time_since_epoch()).count())}},
+                    { .site{apiSite}, .filter{"!nOedRLmfyw"} }
+                );
+                if (res.items.size()) {
+                    for (auto& comment : res.items) {
+                        chat.sendTo(roomSite, targetRoomID,
+                                    fmt::format("{} New comment posted by [{}]({})", botHeader, comment.owner.display_name, comment.owner.link));
+                        chat.sendTo(
+                            roomSite, targetRoomID,
+                            comment.link
+                        );
+                    }
+                }
+
+                lastTime = cycleTime;
+
+            }
+
+            std::this_thread::sleep_for(std::chrono::minutes(1));
+        }
+    } catch (...) {
+        chat.sendTo(stackchat::StackSite::STACKOVERFLOW, 197325, "Boson died");
+        throw;
     }
+
 
 }
