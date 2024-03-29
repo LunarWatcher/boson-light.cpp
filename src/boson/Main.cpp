@@ -89,8 +89,9 @@ int main() {
     stackchat::StackChat chat {
         stackchat::ChatConfig {
             .email{email},
-                .password{password},
-                .userAgent{userAgent}
+            .password{password},
+            .prefix{"~"},
+            .userAgent{userAgent},
         }
     };
     chat.registerCommand("alive", std::make_shared<AliveCommand>());
@@ -98,7 +99,7 @@ int main() {
     stackapi::StackAPI api {
         stackapi::APIConfig {
             .apiKey{"FZBSdF)yDwousbUB9lIEog(("},
-                .userAgent{userAgent},
+            .userAgent{userAgent},
 
         }
     };
