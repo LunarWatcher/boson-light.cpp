@@ -40,7 +40,7 @@ void runner (stackchat::StackChat& chat, stackapi::StackAPI& api, Room room) {
                 {{"fromdate", std::to_string(std::chrono::duration_cast<std::chrono::seconds>(lastTime.time_since_epoch()).count())}},
                 { .site{apiSite}, .filter{"!nOedRLmfyw"} }
             );
-            spdlog::info("{}: {} new comments", room.apiSite, res.items.size());
+            spdlog::debug("{}: {} new comments", room.apiSite, res.items.size());
             if (res.items.size()) {
                 for (auto& comment : res.items) {
                     chat.sendTo(roomSite, targetRoomID,
