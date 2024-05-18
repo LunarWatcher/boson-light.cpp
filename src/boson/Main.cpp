@@ -137,12 +137,12 @@ int main() {
                         badUsers.contains(ev.user_id) ? stackchat::Room::AccessLevel::READ : stackchat::Room::AccessLevel::NONE,
                         ev.user_id
                     );
-                    if (badUsers.contains(ev.user_id)) {
+                    if (!badUsers.contains(ev.user_id)) {
+                        badUsers.insert(ev.user_id);
                         room.deleteMessages(
                             room.sendMessage(fmt::format("{} This room is read-only; do not request access here.", ev.getPing())),
                             std::chrono::seconds(60)
                         );
-                        badUsers.insert(ev.user_id);
                     }
                 }
 
