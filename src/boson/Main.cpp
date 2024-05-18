@@ -1,4 +1,6 @@
 #include "fmt/core.h"
+#include "stackchat/StackChat.hpp"
+#include "stackchat/chat/ChatEvent.hpp"
 #include "stackchat/chat/Command.hpp"
 #include "stackchat/rooms/StackSite.hpp"
 #include <exception>
@@ -76,6 +78,8 @@ public:
 };
 
 int main() {
+    std::set<long long> badUsers;
+
     std::ifstream ss("config.json");
     if (!ss.is_open()) {
         throw std::runtime_error("Failed to find config file");
@@ -107,27 +111,45 @@ int main() {
     chat.sendTo(stackchat::StackSite::STACKOVERFLOW, 197325, botHeader + "Archivist starting");
 
     Timepoint initNow = Clock::now() - std::chrono::seconds(60);
-    std::vector<Room> rooms = {
-        {
-            197298,
-            stackchat::StackSite::STACKOVERFLOW,
-            "meta.stackoverflow",
-            initNow
-        },
-        {
-            1702,
-            stackchat::StackSite::META_STACKEXCHANGE,
-            "meta.stackexchange",
-            initNow
-        }
+    std::vector<Room> rooms;
 
-    };
+    for (auto& archiveRoom : j.at("archive_rooms")) {
+        rooms.push_back({
+            archiveRoom.at("room_id").get<int>(),
+            archiveRoom.at("site").get<stackchat::StackSite>(),
+            archiveRoom.at("api_source"),
+            initNow
+        });
+    }
 
     std::vector<std::thread> threads;
 
     for (auto& room : rooms) {
         threads.push_back(std::thread(std::bind(runner, std::ref(chat), std::ref(api), room)));
     }
+
+    chat.registerEventListener(stackchat::ChatEvent::Code::USER_ACCESS_CHANGED, [&](stackchat::Room& room, const stackchat::ChatEvent& ev) {
+        for (auto& archiveRoom : rooms) {
+            if (archiveRoom.roomId == room.rid && archiveRoom.site == room.site) {
+                if (ev.isAccessRequest()) {
+                    room.setUserAccess(
+                        // For users who request multiple times, shadowban them from requesting with read access
+                        badUsers.contains(ev.user_id) ? stackchat::Room::AccessLevel::READ : stackchat::Room::AccessLevel::NONE,
+                        ev.user_id
+                    );
+                    if (badUsers.contains(ev.user_id)) {
+                        room.deleteMessages(
+                            room.sendMessage(fmt::format("{} This room is read-only; do not request access here.", ev.getPing())),
+                            std::chrono::seconds(60)
+                        );
+                        badUsers.insert(ev.user_id);
+                    }
+                }
+
+                break;
+            }
+        }
+    });
 
     while (running) {
         std::this_thread::sleep_for(std::chrono::seconds(60));

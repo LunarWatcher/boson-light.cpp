@@ -1,4 +1,16 @@
 {
     "email": "rick-astley@example.com",
-    "password": "never gonna give you up"
+    "password": "never gonna give you up",
+    "archive_rooms": [
+        {
+            "site": "stackoverflow",
+            "room_id": 197298,
+            "api_source": "meta.stackoverflow"
+        },
+        {
+            "site": "metastackexchange",
+            "room_id": 1702,
+            "api_source": "meta.stackexchange"
+        }
+    ]
 }
