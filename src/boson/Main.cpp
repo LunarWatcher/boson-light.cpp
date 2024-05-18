@@ -78,8 +78,6 @@ public:
 };
 
 int main() {
-    std::set<long long> badUsers;
-
     std::ifstream ss("config.json");
     if (!ss.is_open()) {
         throw std::runtime_error("Failed to find config file");
@@ -127,31 +125,6 @@ int main() {
     for (auto& room : rooms) {
         threads.push_back(std::thread(std::bind(runner, std::ref(chat), std::ref(api), room)));
     }
-
-    chat.registerEventListener(stackchat::ChatEvent::Code::USER_ACCESS_CHANGED, [&](stackchat::Room& room, const stackchat::ChatEvent& ev) {
-        for (auto& archiveRoom : rooms) {
-            if (archiveRoom.roomId == room.rid && archiveRoom.site == room.site) {
-                if (ev.isAccessRequest()) {
-                    spdlog::info("{} (ID {}) requested access to {} ({})",
-                                 ev.username, ev.user_id, room.rid, room.site);
-                    room.setUserAccess(
-                        // For users who request multiple times, shadowban them from requesting with read access
-                        badUsers.contains(ev.user_id) ? stackchat::Room::AccessLevel::READ : stackchat::Room::AccessLevel::NONE,
-                        ev.user_id
-                    );
-                    if (!badUsers.contains(ev.user_id)) {
-                        badUsers.insert(ev.user_id);
-                        room.deleteMessages(
-                            room.sendMessage(fmt::format("{} This room is read-only; do not request access here.", ev.getPing())),
-                            std::chrono::seconds(60)
-                        );
-                    }
-                }
-
-                break;
-            }
-        }
-    });
 
     while (running) {
         std::this_thread::sleep_for(std::chrono::seconds(60));
