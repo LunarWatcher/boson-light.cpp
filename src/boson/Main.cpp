@@ -132,6 +132,8 @@ int main() {
         for (auto& archiveRoom : rooms) {
             if (archiveRoom.roomId == room.rid && archiveRoom.site == room.site) {
                 if (ev.isAccessRequest()) {
+                    spdlog::info("{} (ID {}) requested access to {} ({})",
+                                 ev.username, ev.user_id, room.rid, room.site);
                     room.setUserAccess(
                         // For users who request multiple times, shadowban them from requesting with read access
                         badUsers.contains(ev.user_id) ? stackchat::Room::AccessLevel::READ : stackchat::Room::AccessLevel::NONE,
