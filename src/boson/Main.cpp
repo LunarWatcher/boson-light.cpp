@@ -34,7 +34,6 @@ void runner (stackchat::StackChat& chat, stackapi::StackAPI& api, Room room) {
     chat.join(room.site, room.roomId);
     try {
         while (running) {
-            Timepoint cycleTime = Clock::now();
             auto& [targetRoomID, roomSite, apiSite, lastTime] = room;
             // there's realistically never going to be 100 comments in a short span of time
             auto res = api.get<stackapi::Comment>(
@@ -54,7 +53,7 @@ void runner (stackchat::StackChat& chat, stackapi::StackAPI& api, Room room) {
                 }
             }
 
-            lastTime = cycleTime;
+            lastTime = Clock::now();
 
 
             std::this_thread::sleep_for(std::chrono::minutes(1));
