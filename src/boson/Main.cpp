@@ -1,3 +1,4 @@
+#include <cpr/cpr.h>
 #include "fmt/core.h"
 #include "stackchat/StackChat.hpp"
 #include "stackchat/chat/ChatEvent.hpp"
@@ -15,8 +16,11 @@
 #include <chrono>
 #include <thread>
 
+#define VERSION "v1.0.0 (Sysadmin Version)"
+
 using Clock = std::chrono::system_clock;
 using Timepoint = Clock::time_point;
+using namespace std::literals;
 
 struct Room {
     int roomId;
@@ -86,6 +90,7 @@ int main() {
 
     auto email = j["email"].get<std::string>();
     auto password = j["password"].get<std::string>();
+    bool hasError = false;
 
     stackchat::StackChat chat {
         stackchat::ChatConfig {
@@ -101,11 +106,36 @@ int main() {
         stackapi::APIConfig {
             .apiKey{"FZBSdF)yDwousbUB9lIEog(("},
             .userAgent{userAgent},
-
+            .errorCallback = [&](stackapi::FaultType type, const std::string& message) {
+                if (type == stackapi::FaultType::RESTORED) {
+                    hasError = false;
+                } else if (type == stackapi::FaultType::CLOUDFLARE) {
+                    hasError = true;
+                }
+            }
         }
     };
+
+    std::thread uptimeMonitor;
+    if (j.contains("uptime_monitor") && j.at("uptime_monitor").is_string()) {
+        std::string uptimeURL = j.at("uptime_monitor").get<std::string>();
+        uptimeMonitor = std::thread([uptimeURL, &hasError]() {
+            // Make sure the service isn't erroneously reported as being up 
+            std::this_thread::sleep_for(15s);
+
+            while (true) {
+                if (!hasError) {
+                    cpr::Get(cpr::Url{uptimeURL}, cpr::VerifySsl(0));
+                }
+                std::this_thread::sleep_for(60s);
+            }
+        });
+    }
+
+    // The workshop room; this is the only room the bot always joins.
+    // This should be fun if anyone else starts an instance for a child meta.
     chat.join(stackchat::StackSite::STACKOVERFLOW, 197325);
-    chat.sendTo(stackchat::StackSite::STACKOVERFLOW, 197325, botHeader + "Archivist starting");
+    chat.sendTo(stackchat::StackSite::STACKOVERFLOW, 197325, botHeader + "Archivist " VERSION " starting");
 
     Timepoint initNow = Clock::now() - std::chrono::seconds(60);
     std::vector<Room> rooms;

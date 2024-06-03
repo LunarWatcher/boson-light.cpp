@@ -12,5 +12,6 @@
             "room_id": 1702,
             "api_source": "meta.stackexchange"
         }
-    ]
+    ],
+    "uptime_monitor": null
 }
