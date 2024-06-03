@@ -1,5 +1,6 @@
 #include <cpr/cpr.h>
 #include "fmt/core.h"
+#include "stackapi/data/structs/APIResponse.hpp"
 #include "stackchat/StackChat.hpp"
 #include "stackchat/chat/ChatEvent.hpp"
 #include "stackchat/chat/Command.hpp"
@@ -39,9 +40,10 @@ void runner (stackchat::StackChat& chat, stackapi::StackAPI& api, Room room) {
     try {
         while (running) {
             auto& [targetRoomID, roomSite, apiSite, lastTime] = room;
-            while (true) {
+            stackapi::APIResponse<stackapi::Comment> res;
+            do {
                 int page = 1;
-                auto res = api.get<stackapi::Comment>(
+                res = api.get<stackapi::Comment>(
                     "comments",
                     {{"fromdate", std::to_string(std::chrono::duration_cast<std::chrono::seconds>(lastTime.time_since_epoch()).count())}},
                     { .site{apiSite}, .filter{"!nOedRLmfyw"}, .page = page }
@@ -57,12 +59,8 @@ void runner (stackchat::StackChat& chat, stackapi::StackAPI& api, Room room) {
                         );
                     }
                 }
-                if (!res.has_more) {
-                    break;
-                }
                 ++page;
-
-            }
+            } while (res.has_more);
             lastTime = Clock::now();
 
 
