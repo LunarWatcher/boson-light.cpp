@@ -39,24 +39,30 @@ void runner (stackchat::StackChat& chat, stackapi::StackAPI& api, Room room) {
     try {
         while (running) {
             auto& [targetRoomID, roomSite, apiSite, lastTime] = room;
-            // there's realistically never going to be 100 comments in a short span of time
-            auto res = api.get<stackapi::Comment>(
-                "comments",
-                {{"fromdate", std::to_string(std::chrono::duration_cast<std::chrono::seconds>(lastTime.time_since_epoch()).count())}},
-                { .site{apiSite}, .filter{"!nOedRLmfyw"} }
-            );
-            spdlog::debug("{}: {} new comments", room.apiSite, res.items.size());
-            if (res.items.size()) {
-                for (auto& comment : res.items) {
-                    chat.sendTo(roomSite, targetRoomID,
-                                fmt::format("{} New comment posted by [{}]({})", botHeader, comment.owner.display_name, comment.owner.link));
-                    chat.sendTo(
-                        roomSite, targetRoomID,
-                        comment.link
-                    );
+            while (true) {
+                int page = 1;
+                auto res = api.get<stackapi::Comment>(
+                    "comments",
+                    {{"fromdate", std::to_string(std::chrono::duration_cast<std::chrono::seconds>(lastTime.time_since_epoch()).count())}},
+                    { .site{apiSite}, .filter{"!nOedRLmfyw"}, .page = page }
+                );
+                spdlog::debug("{}: {} new comments", room.apiSite, res.items.size());
+                if (res.items.size()) {
+                    for (auto& comment : res.items) {
+                        chat.sendTo(roomSite, targetRoomID,
+                                    fmt::format("{} New comment posted by [{}]({})", botHeader, comment.owner.display_name, comment.owner.link));
+                        chat.sendTo(
+                            roomSite, targetRoomID,
+                            comment.link
+                        );
+                    }
                 }
-            }
+                if (!res.has_more) {
+                    break;
+                }
+                ++page;
 
+            }
             lastTime = Clock::now();
 
 
