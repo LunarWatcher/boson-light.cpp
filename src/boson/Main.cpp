@@ -107,10 +107,12 @@ int main() {
             .apiKey{"FZBSdF)yDwousbUB9lIEog(("},
             .userAgent{userAgent},
             .errorCallback = [&](stackapi::FaultType type, const std::string& message) {
-                if (type == stackapi::FaultType::RESTORED) {
+                if (type == stackapi::FaultType::RESTORED && hasError) {
                     hasError = false;
+                    spdlog::info("Cloudflare stopped being a cunt");
                 } else if (type == stackapi::FaultType::CLOUDFLARE) {
                     hasError = true;
+                    spdlog::error("Cloudflare is being a cunt again");
                 }
             }
         }
