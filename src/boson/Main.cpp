@@ -25,8 +25,35 @@
 
 std::atomic<bool> running = true;
 
+const std::map<std::string, std::string> htmlEntities = {
+    {"&lt;", "<"},
+    {"&#60", "<"},
+    {"&gt;", ">"},
+    {"&#62", ">"},
+    {"&quot;", "\""},
+    {"&#34;", "\""},
+    {"&#39;", "'"},
+    {"&#xA;", " "},
 
+    // NOTE: This always has to be last
+    {"&amp;", "&"},
+};
 
+void replaceAll(std::string& inout, const std::string& source, const std::string& repl) {
+    size_t start_pos = 0;
+    while((start_pos = inout.find(source, start_pos)) != std::string::npos) {
+        inout.replace(start_pos, source.length(), repl);
+        start_pos += repl.length();
+    }
+}
+
+std::string htmlDecode(std::string in) {
+    for (auto& [entity, real] : htmlEntities) {
+        replaceAll(in, entity, real);
+    }
+
+    return in;
+}
 
 void runner (stackapi::StackAPI& api, std::map<std::string, std::shared_ptr<boson::ChatProvider>> providers, boson::Room& room) {
     auto provider = providers.at(boson::ctToProvider(room.site));
@@ -52,7 +79,7 @@ void runner (stackapi::StackAPI& api, std::map<std::string, std::shared_ptr<boso
                             //roomSite, std::get<int>(targetRoomID),
                             //comment.link
                         //);
-                        provider->sendMessage(room, comment.body_markdown, comment.owner.display_name, comment.owner.link, comment.link);
+                        provider->sendMessage(room, htmlDecode(comment.body_markdown), comment.owner.display_name, comment.owner.link, comment.link);
                     }
                 }
                 ++page;
