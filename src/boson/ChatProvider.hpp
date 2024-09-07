@@ -27,7 +27,14 @@ struct Room {
 
 class ChatProvider {
 public:
-    virtual void sendMessage(Room& dst, const std::string& message, const std::string& author, const std::string& authorLink, const std::string& commentLink) = 0;
+    virtual void sendMessage(
+        Room& dst,
+        const std::string& message,
+        const std::string& author,
+        const std::string& authorLink,
+        const std::string& commentLink,
+        const std::string& license
+    ) = 0;
     virtual void registerRoom(Room& dst) = 0;
 };
 
@@ -44,7 +51,14 @@ public:
     StackChatProvider(const nlohmann::json& j);
 
     void registerRoom(Room& dst) override;
-    void sendMessage(Room& dst, const std::string& message, const std::string& author, const std::string& authorLink, const std::string& commentLink) override;
+    void sendMessage(
+        Room& dst,
+        const std::string& message,
+        const std::string& author,
+        const std::string& authorLink,
+        const std::string& commentLink,
+        const std::string& license
+    ) override;
 };
 
 class DiscordChatProvider : public ChatProvider {
@@ -55,7 +69,14 @@ public:
     DiscordChatProvider(const nlohmann::json& j);
 
     void registerRoom(Room&) override {}
-    void sendMessage(Room& dst, const std::string& message, const std::string& author, const std::string& authorLink, const std::string& commentLink) override;
+    void sendMessage(
+        Room& dst,
+        const std::string& message,
+        const std::string& author,
+        const std::string& authorLink,
+        const std::string& commentLink,
+        const std::string& license
+    ) override;
 
 };
 

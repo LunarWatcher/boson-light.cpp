@@ -27,7 +27,11 @@ void StackChatProvider::registerRoom(Room& dst) {
     chat.join(ctToStackSite(dst.site), std::get<int>(dst.roomId));
 }
 
-void StackChatProvider::sendMessage(Room& dst, const std::string&, const std::string& author, const std::string& authorLink, const std::string& commentLink) {
+void StackChatProvider::sendMessage(
+    Room& dst, const std::string&, const std::string& author,
+    const std::string& authorLink, const std::string& commentLink,
+    const std::string&
+) {
     auto roomSite = ctToStackSite(dst.site);
 
     chat.sendTo(roomSite, std::get<int>(dst.roomId),
@@ -88,12 +92,28 @@ DiscordChatProvider::DiscordChatProvider(const nlohmann::json& j) : bot(j.at("di
     spdlog::info("Connected to Discord");
 }
 
-void DiscordChatProvider::sendMessage(Room& dst, const std::string& message, const std::string& author, const std::string& authorLink, const std::string& commentLink) {
+void DiscordChatProvider::sendMessage(
+    Room& dst, const std::string& message, const std::string& author,
+    const std::string& authorLink, const std::string& commentLink,
+    const std::string& license
+) {
     dpp::embed embed;
+
+    auto noCC = license.substr(license.find(' ') + 1);
+    auto spacePos = noCC.find(' ');
+    auto version = noCC.substr(spacePos + 1);
+    auto scope = noCC.substr(0, spacePos);
+    auto licenseUrl = std::format("https://creativecommons.org/licenses/{}/{}/", scope, version);
+    
+
     embed.set_title("New comment posted")
         .set_url(commentLink)
         .set_description(
-            std::format("{}\n\n**Posted by:** [{}]({})", message, author, authorLink));
+            std::format(
+                "{}\n\n**Posted by:** [{}]({}) - **License:** [{}]({})",
+                message, author, authorLink,
+                license, licenseUrl
+            ));
 
     bot.message_create_sync({
         std::get<std::string>(dst.roomId),

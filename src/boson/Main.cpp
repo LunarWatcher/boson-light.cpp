@@ -79,7 +79,14 @@ void runner (stackapi::StackAPI& api, std::map<std::string, std::shared_ptr<boso
                             //roomSite, std::get<int>(targetRoomID),
                             //comment.link
                         //);
-                        provider->sendMessage(room, htmlDecode(comment.body_markdown), comment.owner.display_name, comment.owner.link, comment.link);
+                        provider->sendMessage(
+                            room,
+                            htmlDecode(comment.body_markdown),
+                            comment.owner.display_name,
+                            comment.owner.link,
+                            comment.link,
+                            comment.content_license
+                        );
                     }
                 }
                 ++page;
