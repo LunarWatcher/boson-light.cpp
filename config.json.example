@@ -1,6 +1,7 @@
 {
     "email": "rick-astley@example.com",
     "password": "never gonna give you up",
+    "discord_token": "",
     "archive_rooms": [
         {
             "site": "stackoverflow",

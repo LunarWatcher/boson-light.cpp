@@ -13,30 +13,25 @@
 #include <stackapi/StackAPI.hpp>
 #include <stackapi/data/structs/comments/Comment.hpp>
 
+#include <dpp/dpp.h>
+
 #include <string>
 #include <chrono>
 #include <thread>
 
-#define VERSION "v1.0.0 (Sysadmin Version)"
+#include "ChatProvider.hpp"
+#include "ChatSite.hpp"
 
-using Clock = std::chrono::system_clock;
-using Timepoint = Clock::time_point;
-using namespace std::literals;
 
-struct Room {
-    int roomId;
-    stackchat::StackSite site;
-    std::string apiSite;
-
-    Timepoint last;
-};
-
-const std::string botHeader = "\\[ [Boson light](https://github.com/LunarWatcher/boson-light.cpp) \\] ";
-const std::string userAgent = "Boson-light.cpp (+https://github.com/LunarWatcher/boson-light.cpp)";
 std::atomic<bool> running = true;
 
-void runner (stackchat::StackChat& chat, stackapi::StackAPI& api, Room room) {
-    chat.join(room.site, room.roomId);
+
+
+
+void runner (stackapi::StackAPI& api, std::map<std::string, std::shared_ptr<boson::ChatProvider>> providers, boson::Room& room) {
+    auto provider = providers.at(boson::ctToProvider(room.site));
+    provider->registerRoom(room);
+
     try {
         while (running) {
             auto& [targetRoomID, roomSite, apiSite, lastTime] = room;
@@ -46,17 +41,18 @@ void runner (stackchat::StackChat& chat, stackapi::StackAPI& api, Room room) {
                 res = api.get<stackapi::Comment>(
                     "comments",
                     {{"fromdate", std::to_string(std::chrono::duration_cast<std::chrono::seconds>(lastTime.time_since_epoch()).count())}},
-                    { .site{apiSite}, .filter{"!nOedRLmfyw"}, .page = page }
+                    { .site{apiSite}, .filter{"!6WPIompltRXVK"}, .page = page }
                 );
                 spdlog::debug("{}: {} new comments", room.apiSite, res.items.size());
                 if (res.items.size()) {
                     for (auto& comment : res.items) {
-                        chat.sendTo(roomSite, targetRoomID,
-                                    fmt::format("{} New comment posted by [{}]({})", botHeader, comment.owner.display_name, comment.owner.link));
-                        chat.sendTo(
-                            roomSite, targetRoomID,
-                            comment.link
-                        );
+                        //chat.sendTo(roomSite, std::get<int>(targetRoomID),
+                                    //fmt::format("{} New comment posted by [{}]({})", boson::botHeader, comment.owner.display_name, comment.owner.link));
+                        //chat.sendTo(
+                            //roomSite, std::get<int>(targetRoomID),
+                            //comment.link
+                        //);
+                        provider->sendMessage(room, comment.body_markdown, comment.owner.display_name, comment.owner.link, comment.link);
                     }
                 }
                 ++page;
@@ -77,12 +73,6 @@ void runner (stackchat::StackChat& chat, stackapi::StackAPI& api, Room room) {
     }
 }
 
-class AliveCommand : public stackchat::Command {
-public:
-    void onMessage(stackchat::Room &room, const stackchat::ChatEvent& ev, const std::vector<std::string>&) override {
-        room.reply(ev, "[Not for long](https://www.youtube.com/watch?v=9QlfghSkMV4)");
-    }
-};
 
 int main() {
     std::ifstream ss("config.json");
@@ -91,25 +81,14 @@ int main() {
     }
 
     nlohmann::json j = nlohmann::json::parse(ss);
-
-    auto email = j["email"].get<std::string>();
-    auto password = j["password"].get<std::string>();
     bool hasError = false;
 
-    stackchat::StackChat chat {
-        stackchat::ChatConfig {
-            .email{email},
-            .password{password},
-            .prefix{"~"},
-            .userAgent{userAgent},
-        }
-    };
-    chat.registerCommand("alive", std::make_shared<AliveCommand>());
+    std::map<std::string, std::shared_ptr<boson::ChatProvider>> chatProviders;
 
     stackapi::StackAPI api {
         stackapi::APIConfig {
             .apiKey{"FZBSdF)yDwousbUB9lIEog(("},
-            .userAgent{userAgent},
+            .userAgent{boson::userAgent},
             .errorCallback = [&](stackapi::FaultType type, const std::string& message) {
                 if (type == stackapi::FaultType::RESTORED && hasError) {
                     hasError = false;
@@ -138,18 +117,32 @@ int main() {
         });
     }
 
-    // The workshop room; this is the only room the bot always joins.
-    // This should be fun if anyone else starts an instance for a child meta.
-    chat.join(stackchat::StackSite::STACKOVERFLOW, 197325);
-    chat.sendTo(stackchat::StackSite::STACKOVERFLOW, 197325, botHeader + "Archivist " VERSION " starting");
+    if (j.contains("email")) {
+        chatProviders["stackexchange"] = std::make_shared<boson::StackChatProvider>(j);
+    }
+    if (j.contains("discord_token")) {
+        chatProviders["discord"] = std::make_shared<boson::DiscordChatProvider>(j);
+    }
 
     Timepoint initNow = Clock::now() - std::chrono::seconds(60);
-    std::vector<Room> rooms;
+    std::vector<boson::Room> rooms;
 
     for (auto& archiveRoom : j.at("archive_rooms")) {
+        auto rid = archiveRoom.at("room_id");
+        auto site = archiveRoom.at("site").get<std::string>();
+
+        std::variant<int, std::string> roomId;
+
+        if (site == "discord") {
+            roomId = rid.get<std::string>();
+        } else {
+            roomId = rid.get<int>();
+        }
+
+        
         rooms.push_back({
-            archiveRoom.at("room_id").get<int>(),
-            archiveRoom.at("site").get<stackchat::StackSite>(),
+            roomId,
+            boson::strToCt(site),
             archiveRoom.at("api_source"),
             initNow
         });
@@ -158,7 +151,7 @@ int main() {
     std::vector<std::thread> threads;
 
     for (auto& room : rooms) {
-        threads.push_back(std::thread(std::bind(runner, std::ref(chat), std::ref(api), room)));
+        threads.push_back(std::thread(std::bind(runner, std::ref(api), chatProviders, room)));
     }
 
     while (running) {
