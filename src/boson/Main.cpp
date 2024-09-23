@@ -1,10 +1,6 @@
 #include <cpr/cpr.h>
-#include "fmt/core.h"
+#include "boson/data/TitleProvider.hpp"
 #include "stackapi/data/structs/APIResponse.hpp"
-#include "stackchat/StackChat.hpp"
-#include "stackchat/chat/ChatEvent.hpp"
-#include "stackchat/chat/Command.hpp"
-#include "stackchat/rooms/StackSite.hpp"
 #include <exception>
 #include <fstream>
 #include <nlohmann/json.hpp>
@@ -68,10 +64,22 @@ void runner (stackapi::StackAPI& api, std::map<std::string, std::shared_ptr<boso
                 res = api.get<stackapi::Comment>(
                     "comments",
                     {{"fromdate", std::to_string(std::chrono::duration_cast<std::chrono::seconds>(lastTime.time_since_epoch()).count())}},
-                    { .site{apiSite}, .filter{"!6WPIompltRXVK"}, .page = page }
+                    { .site{apiSite}, .filter{"!6WPIompASHLvd"}, .page = page }
                 );
                 spdlog::debug("{}: {} new comments", room.apiSite, res.items.size());
                 if (res.items.size()) {
+                    // Batch titles
+                    std::vector<long long> titleResolutionList;
+                    for (auto& comment : res.items) {
+                        if (comment.post_type != "question") {
+                            comment.post_id = boson::TitleProvider::getQuestionId(comment.link);
+                        }
+                    }
+
+                    boson::TitleProvider::resolveTitles(api, titleResolutionList);
+
+                    
+
                     for (auto& comment : res.items) {
                         //chat.sendTo(roomSite, std::get<int>(targetRoomID),
                                     //fmt::format("{} New comment posted by [{}]({})", boson::botHeader, comment.owner.display_name, comment.owner.link));
@@ -85,7 +93,11 @@ void runner (stackapi::StackAPI& api, std::map<std::string, std::shared_ptr<boso
                             comment.owner.display_name,
                             comment.owner.link,
                             comment.link,
-                            comment.content_license
+                            comment.content_license,
+                            boson::TitleProvider::getTitle(
+                                comment.post_id
+                            ),
+                            comment.post_type == "question"
                         );
                     }
                 }

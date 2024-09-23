@@ -30,7 +30,7 @@ void StackChatProvider::registerRoom(Room& dst) {
 void StackChatProvider::sendMessage(
     Room& dst, const std::string&, const std::string& author,
     const std::string& authorLink, const std::string& commentLink,
-    const std::string&
+    const std::string&, const std::string&, bool
 ) {
     auto roomSite = ctToStackSite(dst.site);
 
@@ -46,8 +46,6 @@ void StackChatProvider::sendMessage(
 
 DiscordChatProvider::DiscordChatProvider(const nlohmann::json& j) : bot(j.at("discord_token")) {
 
-    const std::string log_name = "mybot.log";
-     
     /* Integrate spdlog logger to D++ log events */
     bot.on_log([this](const dpp::log_t & event) {
         switch (event.severity) {
@@ -95,7 +93,8 @@ DiscordChatProvider::DiscordChatProvider(const nlohmann::json& j) : bot(j.at("di
 void DiscordChatProvider::sendMessage(
     Room& dst, const std::string& message, const std::string& author,
     const std::string& authorLink, const std::string& commentLink,
-    const std::string& license
+    const std::string& license, const std::string& qTitle,
+    bool isQuestion
 ) {
     dpp::embed embed;
 
@@ -106,7 +105,7 @@ void DiscordChatProvider::sendMessage(
     auto licenseUrl = std::format("https://creativecommons.org/licenses/{}/{}/", scope, version);
     
 
-    embed.set_title("New comment posted")
+    embed.set_title(fmt::format("{}: {}", isQuestion ? "Q" : "A", qTitle))
         .set_url(commentLink)
         .set_description(
             std::format(

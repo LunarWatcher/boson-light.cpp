@@ -33,7 +33,9 @@ public:
         const std::string& author,
         const std::string& authorLink,
         const std::string& commentLink,
-        const std::string& license
+        const std::string& license,
+        const std::string& qTitle,
+        bool isQuestion
     ) = 0;
     virtual void registerRoom(Room& dst) = 0;
 };
@@ -57,7 +59,9 @@ public:
         const std::string& author,
         const std::string& authorLink,
         const std::string& commentLink,
-        const std::string& license
+        const std::string& license,
+        const std::string& qTitle,
+        bool isQuestion
     ) override;
 };
 
@@ -75,7 +79,9 @@ public:
         const std::string& author,
         const std::string& authorLink,
         const std::string& commentLink,
-        const std::string& license
+        const std::string& license,
+        const std::string& qTitle,
+        bool isQuestion
     ) override;
 
 };
