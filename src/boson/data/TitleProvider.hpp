@@ -75,7 +75,7 @@ inline void resolveTitles(stackapi::StackAPI& api, std::vector<long long> ids) {
         idList << id;
     }
     
-    auto titleResponse = api.get<stackapi::Post>("/posts/" + idList.str());
+    auto titleResponse = api.get<stackapi::Post>("posts/" + idList.str());
     std::unique_lock<std::shared_mutex> l(m);
 
     for (auto& post : titleResponse.items) {
