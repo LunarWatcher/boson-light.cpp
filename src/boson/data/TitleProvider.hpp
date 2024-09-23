@@ -84,7 +84,8 @@ inline void resolveTitles(
         {},
         {
             .site{apiSite},
-            .pageSize = 100
+            .filter{"!nNPvSNOTRz"},
+            .pageSize = 100,
         }
     );
     std::unique_lock<std::shared_mutex> l(m);
