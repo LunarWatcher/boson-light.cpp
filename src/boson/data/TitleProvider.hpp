@@ -38,7 +38,11 @@ inline std::string getTitle(long long postId) {
     return "[Failed to resolve title; please ping Zoe]";
 }
 
-inline void resolveTitles(stackapi::StackAPI& api, std::vector<long long> ids) {
+inline void resolveTitles(
+    stackapi::StackAPI& api,
+    const std::string& apiSite,
+    std::vector<long long> ids
+) {
     // No point in locking if the list is empty
     if (ids.size() == 0) {
         return;
@@ -75,7 +79,14 @@ inline void resolveTitles(stackapi::StackAPI& api, std::vector<long long> ids) {
         idList << id;
     }
     
-    auto titleResponse = api.get<stackapi::Post>("posts/" + idList.str());
+    auto titleResponse = api.get<stackapi::Post>(
+        "posts/" + idList.str(),
+        {},
+        {
+            .site{apiSite},
+            .pageSize = 100
+        }
+    );
     std::unique_lock<std::shared_mutex> l(m);
 
     for (auto& post : titleResponse.items) {

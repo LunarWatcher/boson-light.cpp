@@ -78,7 +78,7 @@ void runner (stackapi::StackAPI& api, std::map<std::string, std::shared_ptr<boso
                         titleResolutionList.push_back(comment.post_id);
                     }
 
-                    boson::TitleProvider::resolveTitles(api, titleResolutionList);
+                    boson::TitleProvider::resolveTitles(api, apiSite, titleResolutionList);
 
                     
 
