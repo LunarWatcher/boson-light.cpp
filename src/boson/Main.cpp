@@ -69,18 +69,16 @@ void runner (stackapi::StackAPI& api, std::map<std::string, std::shared_ptr<boso
                 spdlog::debug("{}: {} new comments", room.apiSite, res.items.size());
                 if (res.items.size()) {
                     // Batch titles
-                    std::vector<long long> titleResolutionList;
+                    std::set<long long> titleResolutionList;
                     for (auto& comment : res.items) {
                         if (comment.post_type != "question") {
                             // Modify the post_id inline to prevent having to redo this check in the next for loop
                             comment.post_id = boson::TitleProvider::getQuestionId(comment.link);
                         }
-                        titleResolutionList.push_back(comment.post_id);
+                        titleResolutionList.insert(comment.post_id);
                     }
 
                     boson::TitleProvider::resolveTitles(api, apiSite, titleResolutionList);
-
-                    
 
                     for (auto& comment : res.items) {
                         //chat.sendTo(roomSite, std::get<int>(targetRoomID),

@@ -41,7 +41,7 @@ inline std::string getTitle(long long postId) {
 inline void resolveTitles(
     stackapi::StackAPI& api,
     const std::string& apiSite,
-    std::vector<long long> ids
+    std::set<long long> ids
 ) {
     // No point in locking if the list is empty
     if (ids.size() == 0) {
