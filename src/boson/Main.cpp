@@ -72,8 +72,10 @@ void runner (stackapi::StackAPI& api, std::map<std::string, std::shared_ptr<boso
                     std::vector<long long> titleResolutionList;
                     for (auto& comment : res.items) {
                         if (comment.post_type != "question") {
+                            // Modify the post_id inline to prevent having to redo this check in the next for loop
                             comment.post_id = boson::TitleProvider::getQuestionId(comment.link);
                         }
+                        titleResolutionList.push_back(comment.post_id);
                     }
 
                     boson::TitleProvider::resolveTitles(api, titleResolutionList);
