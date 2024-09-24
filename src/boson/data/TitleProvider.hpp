@@ -1,6 +1,7 @@
 #pragma once
 
 #include "boson/ChatProvider.hpp"
+#include "boson/util/Parsing.hpp"
 #include "stackapi/StackAPI.hpp"
 #include <sstream>
 #include <string>
@@ -92,7 +93,7 @@ inline void resolveTitles(
 
     for (auto& post : titleResponse.items) {
         posts[post.post_id] = {
-            post.title,
+            htmlDecode(post.title),
             Clock::now()
         };
     }
