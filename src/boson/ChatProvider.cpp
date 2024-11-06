@@ -30,12 +30,16 @@ void StackChatProvider::registerRoom(Room& dst) {
 void StackChatProvider::sendMessage(
     Room& dst, const std::string&, const std::string& author,
     const std::string& authorLink, const std::string& commentLink,
-    const std::string&, const std::string&, bool
+    const std::string&, const std::string&, bool,
+    const IDContext& ids,
+    long long
 ) {
     auto roomSite = ctToStackSite(dst.site);
 
     chat.sendTo(roomSite, std::get<int>(dst.roomId),
-                fmt::format("{} New comment posted by [{}]({})", boson::botHeader, author, authorLink));
+                fmt::format(
+                    "{} New comment posted by [{}]({}). {}",
+                    boson::botHeader, author, authorLink, ids.str()));
     chat.sendTo(
         roomSite, std::get<int>(dst.roomId),
         commentLink
@@ -94,7 +98,9 @@ void DiscordChatProvider::sendMessage(
     Room& dst, const std::string& message, const std::string& author,
     const std::string& authorLink, const std::string& commentLink,
     const std::string& license, const std::string& qTitle,
-    bool isQuestion
+    bool isQuestion,
+    const IDContext& ids,
+    long long timestamp
 ) {
     dpp::embed embed;
 
@@ -109,9 +115,11 @@ void DiscordChatProvider::sendMessage(
         .set_url(commentLink)
         .set_description(
             std::format(
-                "{}\n\n**Posted by:** [{}]({}) - **License:** [{}]({})",
+                "{0}\n\n**Posted by:** [{1}]({2}) on <t:{3}:d> <t:{3}:T> - **License:** [{4}]({5})\n{6}",
                 message, author, authorLink,
-                license, licenseUrl
+                timestamp,
+                license, licenseUrl,
+                ids.str()
             ));
 
     bot.message_create_sync({

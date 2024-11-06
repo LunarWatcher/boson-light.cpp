@@ -40,25 +40,38 @@ void runner (stackapi::StackAPI& api, std::map<std::string, std::shared_ptr<boso
                 );
                 spdlog::debug("{}: {} new comments", room.apiSite, res.items.size());
                 if (res.items.size()) {
-                    // Batch titles
+                    // Batch check titles {{{
                     std::set<long long> titleResolutionList;
                     for (auto& comment : res.items) {
                         if (comment.post_type != "question") {
-                            // Modify the post_id inline to prevent having to redo this check in the next for loop
-                            comment.post_id = boson::TitleProvider::getQuestionId(comment.link);
+                            titleResolutionList.insert(boson::TitleProvider::getQuestionId(comment.link));
+                        } else {
+                            titleResolutionList.insert(comment.post_id);
                         }
-                        titleResolutionList.insert(comment.post_id);
                     }
 
                     boson::TitleProvider::resolveTitles(api, apiSite, titleResolutionList);
+                    // }}}
 
                     for (auto& comment : res.items) {
-                        //chat.sendTo(roomSite, std::get<int>(targetRoomID),
-                                    //fmt::format("{} New comment posted by [{}]({})", boson::botHeader, comment.owner.display_name, comment.owner.link));
-                        //chat.sendTo(
-                            //roomSite, std::get<int>(targetRoomID),
-                            //comment.link
-                        //);
+                        // Create ID context object {{{
+                        int64_t qid,
+                                aid = -1,
+                                cid = comment.comment_id;
+
+                        if (comment.post_type != "question") {
+                            qid = boson::TitleProvider::getQuestionId(comment.link);
+                            aid = comment.post_id;
+                        } else {
+                            qid = comment.post_id;
+                        }
+                        titleResolutionList.insert({
+                            qid,
+                            aid,
+                            cid
+                        });
+                        // }}}
+
                         provider->sendMessage(
                             room,
                             boson::htmlDecode(comment.body_markdown),
@@ -67,9 +80,16 @@ void runner (stackapi::StackAPI& api, std::map<std::string, std::shared_ptr<boso
                             comment.link,
                             comment.content_license,
                             boson::TitleProvider::getTitle(
-                                comment.post_id
+                                apiSite,
+                                qid
                             ),
-                            comment.post_type == "question"
+                            comment.post_type == "question",
+                            boson::IDContext {
+                                qid,
+                                aid,
+                                cid
+                            },
+                            comment.creation_date
                         );
                     }
                 }

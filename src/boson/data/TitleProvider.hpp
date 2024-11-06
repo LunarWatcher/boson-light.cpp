@@ -12,12 +12,13 @@
 namespace boson::TitleProvider {
 
 struct PostInfo {
+    
     std::string title;
-    Clock::time_point lastSeen;
+    Clock::time_point lastChecked;
 };
 
 static std::shared_mutex m;
-static std::map<long long, PostInfo> posts;
+static std::map<std::pair<std::string, long long>, PostInfo> posts;
 
 /**
  * Note that a lock must be acquired prior to calling this function.
@@ -26,15 +27,16 @@ inline void purgePosts() {
     std::erase_if(
         posts,
         [](const auto& entry) -> bool {
-            return Clock::now() - entry.second.lastSeen > std::chrono::days(14);
+            return Clock::now() - entry.second.lastChecked > std::chrono::days(14);
         }
     );
 }
 
-inline std::string getTitle(long long postId) {
+inline std::string getTitle(const std::string& apiSite, long long postId) {
     std::shared_lock<std::shared_mutex> l(m);
-    if (posts.contains(postId)) {
-        return posts.at(postId).title;
+    std::pair<std::string, long long> k{apiSite, postId};
+    if (posts.contains(k)) {
+        return posts.at(k).title;
     }
     return "[Failed to resolve title; please ping Zoe]";
 }
@@ -50,26 +52,27 @@ inline void resolveTitles(
     }
     {
         std::shared_lock<std::shared_mutex> l(m);
-        // Get rid of titles already stored in the index
-        std::erase_if(
-            ids,
-            [](const auto& id) {
-                bool res = posts.contains(id);
-                /**
-                 * This should prevent a race condition
-                 */
-                if (res) {
-                    posts.at(id).lastSeen = Clock::now();
-                }
-                return res;
+
+        // Check if there's a need to update any titles.
+        // The update happens if there's unindexed titles, or if any of the titles haven't been
+        // checked in over 30 minutes.
+        // To conserve quota, all items in the batch are checked regardless of whether or not each entry
+        // needs updates.
+        if (std::find_if(
+            ids.begin(), ids.end(),
+            [&](const auto& id) {
+                std::pair<std::string, long long> k{apiSite, id};
+                bool res = posts.contains(k);
+                
+                return !res || Clock::now() - posts.at(k).lastChecked > 30min;
             }
-        );
+        ) == ids.end()) {
+            spdlog::debug("No title updates needed.");
+            return;
+        }
     }
 
-    // The list may have been emptied out by the previous block
-    if (ids.size() == 0) {
-        return;
-    }
+    spdlog::debug("Updating titles for {} posts", ids.size());
 
     // We know ids.size() <= 100
     std::stringstream idList;
@@ -92,13 +95,18 @@ inline void resolveTitles(
     std::unique_lock<std::shared_mutex> l(m);
 
     for (auto& post : titleResponse.items) {
-        posts[post.post_id] = {
+        std::pair<std::string, long long> k = {
+            apiSite, post.post_id
+        };
+        posts[k] = {
             htmlDecode(post.title),
             Clock::now()
         };
     }
 
+    // If there's more than 2048 entries, trim any old entries
     if (posts.size() >= 2048) {
+        spdlog::debug("posts.size() exceeds 2048; trimming.");
         purgePosts();
     }
 }

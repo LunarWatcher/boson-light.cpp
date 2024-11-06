@@ -25,6 +25,22 @@ struct Room {
     Timepoint last;
 };
 
+struct IDContext {
+    int64_t questionId;
+    int64_t answerId;
+    int64_t commentId;
+
+    std::string str() const {
+        std::stringstream str;
+        str << "Question ID: " << questionId << "; ";
+        if (answerId > 0) {
+            str << "Answer ID: " << answerId << "; ";
+        }
+        str << "Comment ID: " << commentId << ".";
+        return str.str();
+    }
+};
+
 class ChatProvider {
 public:
     virtual void sendMessage(
@@ -35,7 +51,9 @@ public:
         const std::string& commentLink,
         const std::string& license,
         const std::string& qTitle,
-        bool isQuestion
+        bool isQuestion,
+        const IDContext& ids,
+        long long timestamp
     ) = 0;
     virtual void registerRoom(Room& dst) = 0;
 };
@@ -61,7 +79,10 @@ public:
         const std::string& commentLink,
         const std::string& license,
         const std::string& qTitle,
-        bool isQuestion
+        bool isQuestion,
+        const IDContext& ids,
+        long long
+
     ) override;
 };
 
@@ -81,7 +102,10 @@ public:
         const std::string& commentLink,
         const std::string& license,
         const std::string& qTitle,
-        bool isQuestion
+        bool isQuestion,
+        const IDContext& ids,
+        long long timestamp
+
     ) override;
 
 };
