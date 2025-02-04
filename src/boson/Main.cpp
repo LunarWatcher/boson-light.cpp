@@ -36,7 +36,18 @@ void runner (stackapi::StackAPI& api, std::map<std::string, std::shared_ptr<boso
                 res = api.get<stackapi::Comment>(
                     "comments",
                     {{"fromdate", std::to_string(std::chrono::duration_cast<std::chrono::seconds>(lastTime.time_since_epoch()).count())}},
-                    { .site{apiSite}, .filter{"!6WPIompASHLvd"}, .page = page }
+                    /**
+                     * For future reference, this filter is built by enabling all the possible scopes. Though the
+                     * initial filter only uses the required fields, the new filters use all possible filters, since SE
+                     * decided to switch up the filter generation mechanism around 2025-02-04. 
+                     *
+                     * The following list is, as of 2025-02-04, a complete record of filters:
+                     * * "!6WPIompASHLvd": 2024-09-23[^1] to 2025-02-04
+                     * * "!awiJYCz5bVpG0Q": 2025-02-04 to (current)
+                     *
+                     * [^1]: changed to add more fields, this is not the first filter used
+                     */
+                    { .site{apiSite}, .filter{"!awiJYCz5bVpG0Q"}, .page = page }
                 );
                 spdlog::debug("{}: {} new comments", room.apiSite, res.items.size());
                 if (res.items.size()) {
