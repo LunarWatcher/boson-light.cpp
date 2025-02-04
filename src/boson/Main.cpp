@@ -43,11 +43,13 @@ void runner (stackapi::StackAPI& api, std::map<std::string, std::shared_ptr<boso
                      *
                      * The following list is, as of 2025-02-04, a complete record of filters:
                      * * "!6WPIompASHLvd": 2024-09-23[^1] to 2025-02-04
-                     * * "!awiJYCz5bVpG0Q": 2025-02-04 to (current)
+                     * * "!awiJYCz5bVpG0Q": 2025-02-04 to 2025-02-04[^2]
+                     * * "!awiJYCz5Tf(H4v": 2025-02-04 to (current)
                      *
                      * [^1]: changed to add more fields, this is not the first filter used
+                     * [^2]: included an `upvoted` field, which requires an auth token
                      */
-                    { .site{apiSite}, .filter{"!awiJYCz5bVpG0Q"}, .page = page }
+                    { .site{apiSite}, .filter{"!awiJYCz5Tf(H4v"}, .page = page }
                 );
                 spdlog::debug("{}: {} new comments", room.apiSite, res.items.size());
                 if (res.items.size()) {
