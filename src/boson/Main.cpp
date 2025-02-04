@@ -1,5 +1,6 @@
 #include <cpr/cpr.h>
 #include "boson/data/TitleProvider.hpp"
+#include "boson/util/FilterSpec.hpp"
 #include "boson/util/Parsing.hpp"
 #include "stackapi/data/structs/APIResponse.hpp"
 #include <exception>
@@ -23,6 +24,7 @@
 std::atomic<bool> running = true;
 
 
+
 void runner (stackapi::StackAPI& api, std::map<std::string, std::shared_ptr<boson::ChatProvider>> providers, boson::Room& room) {
     auto provider = providers.at(boson::ctToProvider(room.site));
     provider->registerRoom(room);
@@ -36,20 +38,7 @@ void runner (stackapi::StackAPI& api, std::map<std::string, std::shared_ptr<boso
                 res = api.get<stackapi::Comment>(
                     "comments",
                     {{"fromdate", std::to_string(std::chrono::duration_cast<std::chrono::seconds>(lastTime.time_since_epoch()).count())}},
-                    /**
-                     * For future reference, this filter is built by enabling all the possible scopes. Though the
-                     * initial filter only uses the required fields, the new filters use all possible filters, since SE
-                     * decided to switch up the filter generation mechanism around 2025-02-04. 
-                     *
-                     * The following list is, as of 2025-02-04, a complete record of filters:
-                     * * "!6WPIompASHLvd": 2024-09-23[^1] to 2025-02-04
-                     * * "!-*0E*EUBaf1)": 2024-02-04 to (current)
-                     *
-                     * [^1]: changed to add more fields, this is not the first filter used
-                     * [^2]: changed several times in the course of a day due to SE fucking up the API. Only the last,
-                     *       working filter has been included
-                     */
-                    { .site{apiSite}, .filter{"!-*0E*EUBaf1)"}, .page = page }
+                    { .site{apiSite}, .filter{boson::Filters::comments}, .page = page }
                 );
                 spdlog::debug("{}: {} new comments", room.apiSite, res.items.size());
                 if (res.items.size()) {

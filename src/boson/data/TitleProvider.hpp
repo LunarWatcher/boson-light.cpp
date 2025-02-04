@@ -1,6 +1,7 @@
 #pragma once
 
 #include "boson/ChatProvider.hpp"
+#include "boson/util/FilterSpec.hpp"
 #include "boson/util/Parsing.hpp"
 #include "stackapi/StackAPI.hpp"
 #include <sstream>
@@ -88,7 +89,7 @@ inline void resolveTitles(
         {},
         {
             .site{apiSite},
-            .filter{"!nNPvSNOTRz"},
+            .filter{boson::Filters::postsById},
             .pageSize = 100,
         }
     );
