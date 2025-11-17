@@ -1,6 +1,7 @@
 #include "ChatProvider.hpp"
 #include "boson/ChatSite.hpp"
 #include "message.h"
+#include "stc/StringUtil.hpp"
 #include <format>
 
 namespace boson {
@@ -111,7 +112,7 @@ void DiscordChatProvider::sendMessage(
     auto licenseUrl = std::format("https://creativecommons.org/licenses/{}/{}/", scope, version);
     
 
-    embed.set_title(fmt::format("{}: {}", isQuestion ? "Q" : "A", qTitle))
+    embed.set_title(fmt::format("{}: {}", isQuestion ? "Q" : "A", escape(qTitle)))
         .set_url(commentLink)
         .set_description(
             std::format(
@@ -127,6 +128,16 @@ void DiscordChatProvider::sendMessage(
         //std::format("New message by [{}](<{}>) (<{}>):\n>>> {}", author, authorLink, commentLink, message)
         embed
     });
+}
+
+std::string DiscordChatProvider::escape(std::string in) {
+    stc::string::replaceAll(in, "[", "\\[");
+    stc::string::replaceAll(in, "]", "\\]");
+    stc::string::replaceAll(in, "_", "\\_");
+    stc::string::replaceAll(in, "*", "\\*");
+    stc::string::replaceAll(in, "https://", "https:\\/\\/");
+
+    return in;
 }
 // }}}
 }

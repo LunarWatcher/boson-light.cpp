@@ -93,6 +93,8 @@ private:
 public:
     DiscordChatProvider(const nlohmann::json& j);
 
+    std::string escape(std::string in);
+
     void registerRoom(Room&) override {}
     void sendMessage(
         Room& dst,
